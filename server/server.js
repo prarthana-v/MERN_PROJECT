@@ -9,7 +9,9 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to Mongo
-connectDB();
+connectDB().catch((error) => {
+  console.error('MongoDB connection failed:', error.message || error);
+});
 
 const app = express();
 
@@ -56,4 +58,8 @@ app.use('/api/admin', require('./routes/orderRoutes'));
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;
