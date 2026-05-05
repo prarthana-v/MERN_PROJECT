@@ -5,13 +5,26 @@ const path = require('path');
 const fs = require('fs');
 const connectDB = require('./config/db');
 
+let dbConnected = false;
+let dbConnecting = false;
+
+const startDB = async () => {
+  dbConnecting = true;
+  try {
+    await connectDB();
+    dbConnected = true;
+  } catch (error) {
+    console.error('MongoDB connection failed:', error.message || error);
+  } finally {
+    dbConnecting = false;
+  }
+};
+
 // Load env vars
 dotenv.config();
 
 // Connect to Mongo
-connectDB().catch((error) => {
-  console.error('MongoDB connection failed:', error.message || error);
-});
+startDB();
 
 const app = express();
 
@@ -19,7 +32,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173', // Local Vite development
   'http://localhost:3000', // Local development (alternative)
-  'https://lumere-beauty.vercel.app'
+  'https://lumiere-beauty.vercel.app', // Deployed frontend URL
+  'https://your-frontend-project-name.vercel.app' // Add any other Vercel preview URLs if needed
 ];
 
 app.use(cors({
@@ -38,6 +52,17 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+app.use((req, res, next) => {
+  if (!dbConnected) {
+    return res.status(503).json({
+      message: dbConnecting
+        ? 'Database is still connecting, please retry in a moment.'
+        : 'Service unavailable - database connection not established.'
+    });
+  }
+  next();
+});
 
 app.get('/', (req, res) => {
     res.send('API is running...');
