@@ -19,8 +19,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173', // Local Vite development
   'http://localhost:3000', // Local development (alternative)
-  'https://lumiere-beauty.vercel.app', // YOUR DEPLOYED FRONTEND URL (Change this!)
-  'https://your-frontend-project-name.vercel.app' // Add any other Vercel preview URLs if needed
+  'https://lumere-beauty.vercel.app'
 ];
 
 app.use(cors({
