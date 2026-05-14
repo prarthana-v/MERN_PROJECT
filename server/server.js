@@ -1,69 +1,63 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
 const connectDB = require('./config/db');
-
-let dbConnected = false;
-let dbConnecting = false;
-
-const startDB = async () => {
-  dbConnecting = true;
-  try {
-    await connectDB();
-    dbConnected = true;
-  } catch (error) {
-    console.error('MongoDB connection failed:', error.message || error);
-  } finally {
-    dbConnecting = false;
-  }
-};
 
 // Load env vars
 dotenv.config();
-
-// Connect to Mongo
-startDB();
 
 const app = express();
 
 // Middleware
 const allowedOrigins = [
-  'http://localhost:5173', // Local Vite development
-  'http://localhost:3000', // Local development (alternative)
-  'https://lumere-beauty.vercel.app', // Deployed frontend URL
-  'https://your-frontend-project-name.vercel.app' // Add any other Vercel preview URLs if needed
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://lumere-beauty.vercel.app',
+  'https://your-frontend-project-name.vercel.app'
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true, // Important if you use cookies/sessions
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin
+      if (!origin) return callback(null, true);
 
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(
+          new Error(
+            'The CORS policy for this site does not allow access from the specified Origin.'
+          ),
+          false
+        );
+      }
+
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// Body parser
 app.use(express.json());
 
-app.use((req, res, next) => {
-  if (!dbConnected) {
+// Database middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+
     return res.status(503).json({
-      message: dbConnecting
-        ? 'Database is still connecting, please retry in a moment.'
-        : 'Service unavailable - database connection not established.'
+      message: 'Database connection failed',
     });
   }
-  next();
 });
 
+// Root Route
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
@@ -74,16 +68,18 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/banners', require('./routes/bannerRoutes'));
 
-// Admin Stats Route (mapped to same controller for simplicity or separate it)
+// Admin Routes
 app.use('/api/admin', require('./routes/orderRoutes'));
 
-// Serve Uploads Static Folder
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+// Server
 const PORT = process.env.PORT || 5000;
-console.log(`Server will start on port ${process.env.MONGO_URI}...`);
+
+console.log(`Server will start on port ${PORT}...`);
+
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(`Server running on port ${PORT}`)
+  );
 }
 
 module.exports = app;

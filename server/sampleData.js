@@ -138,7 +138,7 @@ const products = [
 
 const adminUser = {
   name: 'Admin User',
-  email: 'admin@lumierebeauty.com',
+  email: 'admin@lumierebeauty.com ',
   password: 'admin123',
   role: 'admin'
 };
